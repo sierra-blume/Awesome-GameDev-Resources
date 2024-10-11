@@ -2,27 +2,68 @@
 #include <fstream>
 #include <iostream>
 #include <istream>
-const std::string TEST_FOLDER = "\\tests\\";
-unsigned int xorShift(unsigned int seed, int r1, int r2);
-int main(){
-  // code here
-  unsigned int seed, N, min, max;
-  std::cin >> seed >> N >> min >> max;
-  unsigned int i;
-  for(i = N; i >= 1; i--)
-  {
-    //Run xor shift
-    seed = xorShift(seed, min, max);
+// tree based data structures
+#include <map>
+#include <set>
+// hashtable based data structures
+#include <unordered_map>
+#include <unordered_set>
+// other includes
+#include <ctime>
+#include <iostream>
+#include <random>
+
+const std::string TEST_FOLDER = "\\test\\";
+
+using namespace std;
+
+struct State {
+  int min;
+  int max;
+  int output;
+  bool operator==(const State&) const {
+    return min == min && max == max && output == output;
   }
+};
+
+// teach the compiler how to hash the State struct
+// hashing function
+namespace std {
+  template<>
+  struct hash<State> {
+    std::size_t operator()(const State &state) const {
+      return hash<int>()(state.min) ^ hash<int>()(state.max) ^ hash<int>()(state.output);
+    }
+  };
 }
-//The purpose of this function is to take the number and xor shift it to output a pseudo-random number
-    unsigned int xorShift(unsigned int seed, int r1, int r2)
-{
-  seed = seed xor (seed << 13);
-  seed = seed xor (seed >> 17);
-  seed = seed xor (seed << 5);
-  int value = r1 + (seed % (r2 - r1 + 1)); //clamps the value to between r1 and r2
-          //output the new values
-          std::cout << value << std::endl;
-  return seed;
+
+int main() {
+  std::unordered_map<State, int> hashMap;
+
+  State state;
+  state.min = 0;
+  state.max = 1000;
+  int id = 0;
+  int warmupPhase = 0;
+  int periodicPhase = 0;
+
+  std::mt19937 generator(std::random_device{}());
+
+  std::uniform_int_distribution<int> distribution(state.min, state.max);
+
+  while (true) {
+    state.output = distribution(generator);
+    if(hashMap.contains(state)) {
+      warmupPhase = hashMap[state];
+      periodicPhase = id - warmupPhase;
+      break;
+    }
+    std::cout << id << ": " << state.output << std::endl;
+    hashMap.emplace(state, id);
+    id++;
+  }
+  std::cout << "Warmup Phase Length: " << warmupPhase << std::endl;
+  std::cout << "Period Phase Length: " << periodicPhase << std::endl;
+
+  return 0;
 }
